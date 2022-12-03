@@ -1,37 +1,48 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 import Data.Functor
 import Data.Matrix
 import Data.Maybe
+
+import Control.Lens hiding ( zoom )
 
 import Brick
 import Brick.AttrMap
 import Brick.Main
 import Brick.Util
 import Brick.Widgets.Core
-import Graphics.Vty.Attributes (defAttr)
+import Brick.Widgets.Table
+import Graphics.Vty as V
 
 import Conway
 
-rle = (fromMaybe [] $ parseRle $ 
-        "24bo11b$22bobo11b$12b2o6b2o12b2o$11bo3bo4b2o12b2o$2o8bo5bo3b2o14b$" ++
-        "2o8bo3bob2o4bobo11b$10bo5bo7bo11b$11bo3bo20b$12b2o!")
+data ConwayState = ConwayState { _generation :: Int
+                               , _board :: Store Cell }
+makeLenses ''ConwayState
 
-app :: App (Store Cell) e ()
-app = App { appDraw         = (\_ -> [(str "Hello," <=> str "World!")])
-          , appChooseCursor = (\_ _ -> Nothing)
-          , appHandleEvent  = (\_ -> pure ())
+app :: App ConwayState () ()
+app = App { appDraw         = draw
+          , appChooseCursor = \_ _ -> Nothing
+          , appHandleEvent  = handleEvent
           , appStartEvent   = pure ()
           , appAttrMap      = const $ attrMap defAttr [] }
 
+draw (ConwayState _ (Store _ m)) = [renderTable t2] where
+  t = table $ return . str . fmap (head . show) <$> toLists m
+  t2 = rowBorders False $ columnBorders False t
+
+handleEvent (VtyEvent (V.EvKey (V.KChar ' ') [])) =
+  do modify (over generation (+1))
+     modify (over board step)
+handleEvent (VtyEvent (V.EvKey V.KEsc [])) = halt 
+handleEvent _ = pure ()
+
+rle = fromMaybe [] $ parseRle "27b2o$27bobo$29bo4b2o$25b4ob2o2bo2bo$25bo2bo3bobob2o$28bobobobo$29b2obobo$33b2o$19b2o$20bo8bo$20bobo5b2o$21b2o$35bo$36bo$34b3o2b$25bo$25b2o$24bobo4b2o22bo$31bo21b3o$32b3o17bo$34bo17b2o2b$45bo$46b2o12b2o$45b2o14bo$3b2o56bob2o$4bo9b2o37bo5b3o2bo$2bo10bobo37b2o3bo3b2o$2b5o8bo5b2o35b2obo$7bo13bo22b2o15bo$4b3o12bobo21bobo12b3o$3bo15b2o22bo13bo$3bob2o35b2o5bo8b5o$b2o3bo3b2o37bobo10bo$o2b3o5bo37b2o9bo$2obo56b2o$3bo14b2o$3b2o12b2o$19bo2b$11b2o17bo$12bo17b3o$9b3o21bo$9bo22b2o4bobo$38b2o$39bo2b$28b3o$28bo$29bo$42b2o$35b2o5bobo$35bo8bo$44b2o2b$31bo$30bobob2o$30bobobobo$27b2obobo3bo2bo$27bo2bo2b2ob4o$29b2o4bo$35bobo$36b2o!"
+
 main :: IO ()
 main = do
-  let initialState = Store (1, 1) (matrix 61 60 $ lookups rle)
+  print $ show rle
+  let initialState = ConwayState 0 $ Store (1, 1) (matrix 80 100 $ lookups rle)
   finalState <- defaultMain app initialState
   putStrLn "Bye, bye!"
-
--- main :: IO ()
--- main = void $ traverse print $ fmap peek $ take 200 $ iterate step board where
---   rle = fromMaybe [] $ parseRle $ 
---     "24bo11b$22bobo11b$12b2o6b2o12b2o$11bo3bo4b2o12b2o$2o8bo5bo3b2o14b$" ++
---       "2o8bo3bob2o4bobo11b$10bo5bo7bo11b$11bo3bo20b$12b2o!"
---   board = Store (1, 1) (matrix 61 60 $ lookups rle)
 

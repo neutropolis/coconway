@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
 
 module Conway (Cell, lookups, parseRle, peek, pos, step, Store (Store), Rle) where
 
@@ -26,15 +25,15 @@ instance Comonad Store where
 data Cell = Live | Dead deriving Eq
 
 instance Show Cell where
-  show Live = "█"
+  show Live = "▮"
   show Dead = " "
 
 -- Step Logic
 
 neighbours :: Store Cell -> [Cell]
 neighbours (Store (x, y) m) = fmap (\(x, y) -> getElem x y m) pos where
-  pos = tail [(x, y) | x <- [x, x-1, x+1], y <- [y, y-1, y+1],
-                       0 < x, x <= nrows m, 0 < y, y <= ncols m]
+  pos = tail [(x, y) | x <- [x, x-1, x+1], 0 < x, x <= nrows m,
+                       y <- [y, y-1, y+1], 0 < y, y <= ncols m]
 
 evolve :: Store Cell -> Cell
 evolve s = case (extract s, length $ filter (== Live) $ neighbours s) of
@@ -53,7 +52,7 @@ instance Read Cell where
 
 lookups :: Rle -> (Int, Int) -> Cell
 lookups rle xy = findWithDefault Dead xy (fromList flat)  where
-  raw = fmap (concat . fmap (\case (r, c) -> replicate r $ read [c])) rle
+  raw = fmap (concatMap (\(r, c) -> replicate r $ read [c])) rle
   ind = zip [0..] $ fmap (zip [0..]) raw
-  flat = concat $ fmap (\(x, rw) -> fmap (\(y, cell) -> ((8+x, 8+y), cell)) rw) ind
+  flat = concatMap (\(x, rw) -> fmap (\(y, cell) -> ((8+x, 8+y), cell)) rw) ind
 
