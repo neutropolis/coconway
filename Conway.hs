@@ -1,5 +1,5 @@
 
-module Conway (Cell, lookups, parseRle, peek, pos, step, Store (Store), Rle) where
+module Conway (Cell (Live, Dead), lookups, parseRle, peek, pos, step, Store (Store), Rle) where
 
 import Control.Comonad
 import Data.Functor
@@ -23,10 +23,6 @@ instance Comonad Store where
 -- Conway's data structures
 
 data Cell = Live | Dead deriving Eq
-
-instance Show Cell where
-  show Live = "▮"
-  show Dead = " "
 
 -- Step Logic
 
@@ -54,5 +50,5 @@ lookups :: Rle -> (Int, Int) -> Cell
 lookups rle xy = findWithDefault Dead xy (fromList flat)  where
   raw = fmap (concatMap (\(r, c) -> replicate r $ read [c])) rle
   ind = zip [0..] $ fmap (zip [0..]) raw
-  flat = concatMap (\(x, rw) -> fmap (\(y, cell) -> ((8+x, 8+y), cell)) rw) ind
+  flat = concatMap (\(x, rw) -> fmap (\(y, cell) -> ((x, y), cell)) rw) ind
 
