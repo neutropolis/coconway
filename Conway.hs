@@ -1,5 +1,5 @@
 
-module Conway (Cell (Live, Dead), lookups, parseRle, peek, pos, step, Store (Store), Rle) where
+module Conway (Cell (Live, Dead), peek, pos, step, Store (Store), Rle) where
 
 import Control.Comonad
 import Data.Functor
@@ -7,7 +7,7 @@ import Data.Map (findWithDefault, fromList)
 import Data.Matrix hiding (fromList)
 import Data.Maybe
 
-import Parser
+import Rle
 
 -- Generic comonadic stuff
 
@@ -39,16 +39,4 @@ evolve s = case (extract s, length $ filter (== Live) $ neighbours s) of
 
 step :: Store Cell -> Store Cell
 step = (=>> evolve)
-
--- Parsing
-
-instance Read Cell where
-  readsPrec _ "o" = [(Live, "")]
-  readsPrec _ "b" = [(Dead, "")]
-
-lookups :: Rle -> (Int, Int) -> Cell
-lookups rle xy = findWithDefault Dead xy (fromList flat)  where
-  raw = fmap (concatMap (\(r, c) -> replicate r $ read [c])) rle
-  ind = zip [0..] $ fmap (zip [0..]) raw
-  flat = concatMap (\(x, rw) -> fmap (\(y, cell) -> ((x, y), cell)) rw) ind
 
